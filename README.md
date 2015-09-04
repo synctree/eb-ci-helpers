@@ -6,4 +6,4 @@ Helpers for deploying to Elastic Beanstalk through travis, circle, or other CI s
 Install
 ---
 
-  curl https://raw.githubusercontent.com/synctree/eb-ci-helpers/master/script/install.sh | bash -
+    curl https://raw.githubusercontent.com/synctree/eb-ci-helpers/master/script/install.sh | bash -
