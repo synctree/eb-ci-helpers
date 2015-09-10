@@ -120,7 +120,7 @@ while [[ -n "$1" ]] ; do
     now=$(date -u +%s)
     print_new_events
     last_event_time="$now"
-    sleep 5
+    sleep 15
   done
   echo " "
 
