@@ -43,14 +43,14 @@ create_archive() {
 }
 
 upload_archive() {
-  aws s3 cp $build_dir/$version_label.zip s3://$s3_bucket/$version_label.zip
+  aws s3 cp $build_dir/$version_label.zip s3://$s3_bucket/$application_name/$version_label.zip
 }
 
 create_version() {
   aws elasticbeanstalk create-application-version  \
     --application-name $application_name  \
     --version-label $version_label  \
-    --source-bundle S3Bucket=$s3_bucket,S3Key=$version_label.zip  \
+    --source-bundle S3Bucket=$s3_bucket,S3Key=$application_name/$version_label.zip  \
     --region us-east-1
 }
 
