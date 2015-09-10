@@ -23,6 +23,11 @@ if [[ -z "$branch_name" ]] ; then
 fi
 
 clean_branch="$(echo $branch_name | sed -e 's/\//-/g')"
+s3_bucket="$S3_BUCKET"
+if [[ -z "$s3_bucket" ]] ; then
+  # defaults to the github username that owns the repo
+  s3_bucket="$(dirname `git config --get remote.origin.url` | cut -d':' -f2)-deployments"
+fi
 
 version="$CIRCLE_SHA1"
 if [[ -z "$version" ]] ; then
@@ -38,14 +43,14 @@ create_archive() {
 }
 
 upload_archive() {
-  aws s3 cp $build_dir/$version_label.zip s3://$application_name-deployments/$version_label.zip
+  aws s3 cp $build_dir/$version_label.zip s3://$s3_bucket/$version_label.zip
 }
 
 create_version() {
   aws elasticbeanstalk create-application-version  \
     --application-name $application_name  \
     --version-label $version_label  \
-    --source-bundle S3Bucket=$application_name-deployments,S3Key=$version_label.zip  \
+    --source-bundle S3Bucket=$s3_bucket,S3Key=$version_label.zip  \
     --region us-east-1
 }
 
