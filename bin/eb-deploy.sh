@@ -76,6 +76,11 @@ get_health() {
   describe_environment | jq -r '.Environments[0].Health'
 }
 
+is_healthy() {
+  [[ "$(get_health)" == "Green" ]] && return 0
+  return 1
+}
+
 is_updating() {
   [[ "$(get_status)" == "Updating" ]] && return 0
   return 1
@@ -129,6 +134,15 @@ while [[ -n "$1" ]] ; do
   fi
 
   info "Update complete!"
+
+  infon "Waiting for environment to become healthy"
+  start=$(date -u +%s)
+  deadline=$((start + 60))
+  while [[ $(date -u +%s) -le $deadline ]] && ! is_healthy ; do
+    echo -n .
+    now=$(date -u +%s)
+    sleep 15
+  done
 
   health="$(get_health)"
   info "Environment health: $health"
