@@ -66,14 +66,14 @@ end
 die('EB Application Name required. Use -a flag') unless opts.application
 die('EB Environment Name required. Use -e flag') unless opts.environment
 
-branch_name = ENV['CIRCLE_BRANCH']
-if branch_name.nil?
-  branch_name = `git symbolic-ref --short -q HEAD`.chomp
+opts.branch_name = ENV['CIRCLE_BRANCH']
+if opts.branch_name.nil?
+  opts.branch_name = `git symbolic-ref --short -q HEAD`.chomp
 end
-info "Branch Name: #{branch_name}"
+info "Branch Name: #{opts.branch_name}"
 
-clean_branch = branch_name.gsub('/', '-')
-info "Clean Branch Name: #{clean_branch}"
+opts.clean_branch = opts.branch_name.gsub('/', '-')
+info "Clean Branch Name: #{opts.clean_branch}"
 
 unless opts.s3_bucket
   git_remote = `git config --get remote.origin.url | cut -d':' -f2`
@@ -82,44 +82,44 @@ unless opts.s3_bucket
 end
 info "S3 Bucket: #{opts.s3_bucket}"
 
-version = ENV['CIRCLE_SHA1']
-if version.nil?
-  version = `git rev-parse HEAD`.chomp
+opts.version = ENV['CIRCLE_SHA1']
+if opts.version.nil?
+  opts.version = `git rev-parse HEAD`.chomp
 end
-info "Commit: #{version}"
+info "Commit: #{opts.version}"
 
-build_dir = ENV['CIRCLE_ARTIFACTS'].nil? ? '/tmp' : ENV['CIRCLE_ARTIFACTS']
-info "Build Dir: #{build_dir}"
+opts.build_dir = ENV['CIRCLE_ARTIFACTS'].nil? ? '/tmp' : ENV['CIRCLE_ARTIFACTS']
+info "Build Dir: #{opts.build_dir}"
 
-version_label = "#{clean_branch}-#{version}"
+opts.version_label = "#{opts.clean_branch}-#{opts.version}"
 info "EB Application: #{opts.application}"
 info "EB Environment: #{opts.environment}"
-info "EB Version Label: #{version_label}"
+info "EB Version Label: #{opts.version_label}"
 
 def create_archive
-  `git archive HEAD --format=zip > #{build_dir}/#{version_label}.zip`.chomp
+  `git archive HEAD --format=zip > #{opts.build_dir}/#{opts.version_label}.zip`.chomp
 end
 
 def add_to_archive
-  `zip -r #{build_dir}/#{version_label}.zip #{opts.extra_zip.join(' ')}`.chomp
+  `zip -r #{opts.build_dir}/#{opts.version_label}.zip #{opts.extra_zip.join(' ')}`.chomp
 end
 
 def upload_archive
-  `aws s3 cp #{build_dir}/#{version_label}.zip s3://#{opts.s3_bucket}/#{opts.application}/#{version_label}.zip`.chomp
+  `aws s3 cp #{opts.build_dir}/#{opts.version_label}.zip s3://#{opts.s3_bucket}/#{opts.application}/#{opts.version_label}.zip`.chomp
 end
 
 def create_version
   `aws elasticbeanstalk create-application-version  \
     --application-name #{opts.application}  \
-    --version-label #{version_label}  \
-    --source-bundle S3Bucket=#{opts.s3_bucket},S3Key=#{opts.application}/#{version_label}.zip  \
+    --version-label #{opts.version_label}  \
+    --source-bundle S3Bucket=#{opts.s3_bucket},S3Key=#{opts.application}/#{opts.version_label}.zip  \
     --region us-west-2`.chomp
 end
 
 def deploy_version
   `aws elasticbeanstalk update-environment \
     --environment-name #{opts.environment} \
-    --version-label #{version_label} \
+    --version-label #{opts.version_label} \
     --region #{opts.region}`.chomp
 end
 
