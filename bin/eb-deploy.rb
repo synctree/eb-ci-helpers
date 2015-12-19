@@ -1,5 +1,3 @@
-#! /usr/bin/ruby
-
 require 'ostruct'
 require 'optparse'
 
