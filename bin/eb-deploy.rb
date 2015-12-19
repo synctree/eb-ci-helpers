@@ -179,7 +179,7 @@ res = create_version()
 info "#{res}"
 
 info "Deploying to #{opts.environment}"
-res = deploy_versoin()
+res = deploy_version()
 info "#{res}"
 infon "Waiting for update to complete."
 
