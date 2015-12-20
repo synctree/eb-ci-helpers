@@ -8,8 +8,10 @@ def opts
                            environment: nil,
                            region: 'us-east-1',
                            s3_bucket: nil,
-                           extra_zip: nil,                           
-                           debug: false
+                           version_label: nil,
+                           extra_zip: nil,                      
+                           debug: false,
+                           dryrun: false
                           )
 end
 
@@ -36,6 +38,14 @@ def option_parser
 
     o.on("--s3-bucket [BUCKET]", "The S3 Bucket Name if you want to use a custome name. DEFAULT: {Basename of the Repo Owner}-deployments.") do |h|
       opts.s3_bucket = h
+    end
+
+    o.on("--version-label [EB_VERSION_LABEL]", "A custom version label for the deployment.") do |h|
+      opts.version_label = h
+    end
+
+    o.on("--dry-run", "Run all generation commands, but do NOT execute any API calls.") do |h|
+      opts.dryrun = h
     end
     
     o.on("-d", "--[no-]debug", "Print debug") do |h|
@@ -101,10 +111,12 @@ info "Commit: #{opts.version}"
 opts.build_dir = ENV['CIRCLE_ARTIFACTS'].nil? ? '/tmp' : ENV['CIRCLE_ARTIFACTS']
 info "Build Dir: #{opts.build_dir}"
 
-opts.version_label = "#{opts.clean_branch}-#{opts.version}"
+opts.version_label = "#{opts.clean_branch}-#{opts.version}" unless opts.version_label
 info "EB Application: #{opts.application}"
 info "EB Environment: #{opts.environment}"
 info "EB Version Label: #{opts.version_label}"
+
+exit if opts.dryrun
 
 def create_archive
   exec_cli "git archive HEAD --format=zip > #{opts.build_dir}/#{opts.version_label}.zip"
@@ -207,20 +219,20 @@ while is_updating() && `date -u +%s`.chomp.to_i < deadline do
   opts.last_event_time = now
   sleep 15
 end
+$stdout.puts ''
 
 info "Checking state of Environment..."
 die("Update timed out.") if is_updating()
 info "Update Complete!"
 
 infon "Waiting for environment to become healthy"
-
 start= `date -u +%s`.chomp.to_i
 deadline = start + 60
-
 while `date -u +%s`.chomp.to_i < deadline && ! is_healthy()  do
   $stdout.print '.'
   sleep 15
 end
+$stdout.puts ''
 
 health = get_health()
 info "Environment health: #{health}"
