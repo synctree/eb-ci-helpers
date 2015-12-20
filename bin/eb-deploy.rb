@@ -4,14 +4,14 @@ require 'json'
 
 def opts
   @opts ||= OpenStruct.new(
-                           application: nil,
-                           environment: nil,
-                           region: 'us-east-1',
-                           s3_bucket: nil,
+                           application:   nil,
+                           environment:   nil,
+                           region:        'us-east-1',
+                           s3_bucket:     nil,
                            version_label: nil,
-                           extra_zip: nil,                      
-                           debug: false,
-                           dryrun: false
+                           extra_zip:     nil,                      
+                           debug:         false,
+                           dryrun:        false
                           )
 end
 
@@ -235,6 +235,7 @@ end
 $stdout.puts ''
 
 health = get_health()
+
 info "Environment health: #{health}"
 unless "#{health}" == "Green"
   die "#{opts.environment} is unhealthy after deployment."
