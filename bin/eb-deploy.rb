@@ -1,5 +1,6 @@
 require 'ostruct'
 require 'optparse'
+require 'json'
 
 def opts
   @opts ||= OpenStruct.new(
@@ -7,7 +8,7 @@ def opts
                            environment: nil,
                            region: 'us-east-1',
                            s3_bucket: nil,
-                           extra_zip: nil,
+                           extra_zip: nil,                           
                            debug: false
                           )
 end
@@ -63,6 +64,15 @@ def die str
   exit 1
 end
 
+def exec_cli cmd
+  if opts.debug
+    $stdout.print "\n\n"
+    info "Executing Command: #{cmd}"
+    $stdout.print "\n"
+  end
+  `#{cmd}`.chomp
+end
+
 die('EB Application Name required. Use -a flag') unless opts.application
 die('EB Environment Name required. Use -e flag') unless opts.environment
 
@@ -97,45 +107,47 @@ info "EB Environment: #{opts.environment}"
 info "EB Version Label: #{opts.version_label}"
 
 def create_archive
-  `git archive HEAD --format=zip > #{opts.build_dir}/#{opts.version_label}.zip`.chomp
+  exec_cli "git archive HEAD --format=zip > #{opts.build_dir}/#{opts.version_label}.zip"
 end
 
 def add_to_archive
-  `zip -r #{opts.build_dir}/#{opts.version_label}.zip #{opts.extra_zip.join(' ')}`.chomp
+  exec_cli "zip -r #{opts.build_dir}/#{opts.version_label}.zip #{opts.extra_zip.join(' ')}"
 end
 
 def upload_archive
-  `aws s3 cp #{opts.build_dir}/#{opts.version_label}.zip s3://#{opts.s3_bucket}/#{opts.application}/#{opts.version_label}.zip`.chomp
+  exec_cli "aws s3 cp #{opts.build_dir}/#{opts.version_label}.zip s3://#{opts.s3_bucket}/#{opts.application}/#{opts.version_label}.zip"
 end
 
 def create_version
-  `aws elasticbeanstalk create-application-version  \
+  exec_cli "aws elasticbeanstalk create-application-version  \
     --application-name #{opts.application}  \
     --version-label #{opts.version_label}  \
     --source-bundle S3Bucket=#{opts.s3_bucket},S3Key=#{opts.application}/#{opts.version_label}.zip  \
-    --region us-west-2`.chomp
+    --region us-west-2"
 end
 
 def deploy_version
-  `aws elasticbeanstalk update-environment \
+  exec_cli "aws elasticbeanstalk update-environment \
     --environment-name #{opts.environment} \
     --version-label #{opts.version_label} \
-    --region #{opts.region}`.chomp
+    --region #{opts.region}"
 end
 
 def describe_environment
-  `aws elasticbeanstalk describe-environments \
+  exec_cli "aws elasticbeanstalk describe-environments \
     --region #{opts.region} \
     --application #{opts.application} \
-    --environment-names #{opts.environment}`.chomp
+    --environment-names #{opts.environment}"
 end
 
 def get_status
-  `#{describe_environment()} | jq -r '.Environments[0].Status'`.chomp
+  json = JSON.parse(describe_environment())
+  json['Environments'][0]['Status']
 end
 
 def get_health
-  `#{describe_environment()} | jq -r '.Environments[0].Health'`.chomp
+  json = JSON.parse(describe_environment())
+  json['Environments'][0]['Health']
 end
 
 def is_healthy
@@ -149,48 +161,50 @@ end
 last_event_time = `date -u +%s`.chomp
 
 def get_new_events
-  `aws elasticbeanstalk describe-events \
+  json = JSON.parse(exec_cli("aws elasticbeanstalk describe-events \
     --region us-west-2 \
-    --application-name $application_name \
-    --environment-name $environment_name \
-    --start-time $last_event_time \
-    | jq -r '.Events[].Message'`.chomp
+    --application-name #{opts.application} \
+    --environment-name #{opts.environment} \
+    --start-time #{opts.last_event_time}"))
+  json['Events']
 end
 
 def print_new_events
-  events = "#{get_new_events()}"
+  events = get_new_events()
   if events
     puts " "
-    events.each {|e| info "#{e}"}
+    events.each {|e| info "EB Message: #{e['Message']}"}
     infon "Still waiting..."
   end
 end
 
 info "Creating archive..."
-res = create_archive()
-info "#{res}"
+create_archive()
+
+if opts.extra_zip
+  info "Extending archive with: #{opts.extra_zip.join(' ')}"
+  add_to_archive()
+end
 
 info "Uploading archive..."
-res = upload_archive()
-info "#{res}"
+upload_archive()
 
 info "Creating version..."
-res = create_version()
-info "#{res}"
+create_version()
 
 info "Deploying to #{opts.environment}"
-res = deploy_version()
-info "#{res}"
+deploy_version()
 infon "Waiting for update to complete."
 
-start= `date -u +%s`.chomp.to_i
+start = `date -u +%s`.chomp.to_i
 deadline = start + 900
 
+opts.last_event_time = `date -u +%s`.chomp.to_i
 while is_updating() && `date -u +%s`.chomp.to_i < deadline do
   $stdout.print '.'
   now = `date -u +%s`.chomp.to_i
   print_new_events()
-  last_event_time = now
+  opts.last_event_time = now
   sleep 15
 end
 
