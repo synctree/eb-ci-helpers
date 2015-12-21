@@ -11,7 +11,8 @@ def opts
                            version_label: nil,
                            extra_zip:     nil,                      
                            debug:         false,
-                           dryrun:        false
+                           dryrun:        false,
+                           only_publish_version: false
                           )
 end
 
@@ -44,6 +45,10 @@ def option_parser
       opts.version_label = h
     end
 
+    o.on("--only-publish-version", "Only publish the application version. Do not deploy.") do |h|
+      opts.only_publish_version = h
+    end
+    
     o.on("--dry-run", "Run all generation commands, but do NOT execute any API calls.") do |h|
       opts.dryrun = h
     end
@@ -115,6 +120,7 @@ opts.version_label = "#{opts.clean_branch}-#{opts.version}" unless opts.version_
 info "EB Application: #{opts.application}"
 info "EB Environment: #{opts.environment}"
 info "EB Version Label: #{opts.version_label}"
+info "Only publishing version. Will not deploy." if opts.only_publish_version
 
 exit if opts.dryrun
 
@@ -203,6 +209,11 @@ upload_archive()
 
 info "Creating version..."
 create_version()
+
+if opts.only_publish_version
+  info "Version publication complete. Goodbye!"
+  exit
+end
 
 info "Deploying to #{opts.environment}"
 deploy_version()
