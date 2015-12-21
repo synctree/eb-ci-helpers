@@ -70,7 +70,7 @@ def option_parser
       opts.aws_account_id = h
     end
 
-    o.on("--removed-old-instance", "Terminate the old instance that is stored in the Instance Tag on RDS Source.") do |h|
+    o.on("--remove-old-instance", "Terminate the old instance that is stored in the Instance Tag on RDS Source.") do |h|
       opts.remove_old_instance = h
     end
 
@@ -119,7 +119,7 @@ die('Environment tag not set. Use -e flag') unless opts.environment
 die('DB Class not set. Use -d flag') unless opts.db_class
 
 # Setting some useful values
-opts.instance_name       = "#{opts.basename}-#{`date +'%Y-%m-%d-%H%M%S'`}"
+opts.instance_name       = "#{opts.basename}-#{`date +'%Y-%m-%d-%H%M%S'`.chomp}"
 opts.vpc_security_groups = opts.vpc_sg_ids.map {|s| "\"#{s}\""}.join(' ') if opts.vpc_sg_ids
 opts.arn                 = "arn:aws:rds:#{opts.region}:#{opts.aws_account_id}:db:#{opts.source}" if opts.aws_account_id
 opts.finder_key          = "current-#{opts.environment}"
