@@ -231,7 +231,7 @@ def gen_update_dns_file
     ]
   }
   opts.file_path = "/tmp/#{opts.hosted_zone_id}-#{opts.dns_record}.json"
-  File.write(file_path, data.to_json)
+  File.write(opts.file_path, data.to_json)
 end
 
 def update_dns
