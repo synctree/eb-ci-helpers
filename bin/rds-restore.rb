@@ -71,7 +71,11 @@ def option_parser
     end
 
     o.on("--remove-old-instance [BOOLEAN]", "Terminate the old instance that is stored in the Instance Tag on RDS Source.") do |h|
-      opts.remove_old_instance = h
+      if h == 'true'
+        opts.remove_old_instance = true
+      else
+        opts.remove_old_instance = false
+      end
     end
 
     o.on("--dry-run", "Run all generation commands, but do NOT execute any API calls.") do |h|
