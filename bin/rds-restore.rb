@@ -290,7 +290,7 @@ info "Sleeping for 30 seconds..."
 sleep 30
 
 # Reboot
-info "Rebooting instance: $instance_name"
+info "Rebooting instance: #{opts.instance_name}"
 reboot_instance()
 
 # Check Status
