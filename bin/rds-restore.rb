@@ -15,7 +15,7 @@ def opts
                            hosted_zone_id:      nil,
                            dns_record:          nil,
                            aws_account_id:      nil,
-                           remove_old_instance: nil,
+                           remove_old_instance: false,
                            debug:               false,
                            dryrun:              false
                           )
@@ -70,7 +70,7 @@ def option_parser
       opts.aws_account_id = h
     end
 
-    o.on("--remove-old-instance", "Terminate the old instance that is stored in the Instance Tag on RDS Source.") do |h|
+    o.on("--remove-old-instance [BOOLEAN]", "Terminate the old instance that is stored in the Instance Tag on RDS Source.") do |h|
       opts.remove_old_instance = h
     end
 
