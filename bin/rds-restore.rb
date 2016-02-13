@@ -293,6 +293,10 @@ poll_status
 info "Sleeping for 30 seconds..."
 sleep 30
 
+# Status
+info "Polling for status 'available' status."
+poll_status
+
 # Reboot
 info "Rebooting instance: #{opts.instance_name}"
 reboot_instance()
